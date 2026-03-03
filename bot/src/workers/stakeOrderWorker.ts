@@ -44,9 +44,14 @@ export async function checkAndProcessStakeOrders(): Promise<void> {
       await processStakeOrder(order);
     }
   } catch (error) {
-    await handleError('StakeOrderCheckError', {
-      error: error instanceof Error ? error.message : 'Unknown error'
-    }, null, false);
+    await handleError(
+      'StakeOrderCheckError',
+      {
+        error: error instanceof Error ? error.message : 'Unknown error',
+      },
+      null,
+      false,
+    );
   }
 }
 
@@ -55,7 +60,9 @@ export async function checkAndProcessStakeOrders(): Promise<void> {
  */
 async function processStakeOrder(order: StakeOrder): Promise<void> {
   try {
-    logger.info(`[StakeWorker] Processing stake order ${order.id} for user ${order.telegramId}`);
+    logger.info(
+      `[StakeWorker] Processing stake order ${order.id} for user ${order.telegramId}`,
+    );
 
     // Check the swap status via SideShift
     const swapStatus = await getOrderStatus(order.sideshiftOrderId);
@@ -65,7 +72,7 @@ async function processStakeOrder(order: StakeOrder): Promise<void> {
       await db.updateStakeOrderSwapStatus(
         order.sideshiftOrderId,
         swapStatus.status,
-        swapStatus.settleAmount || undefined
+        swapStatus.settleAmount || undefined,
       );
 
       // Notify user of swap status change
@@ -78,25 +85,26 @@ async function processStakeOrder(order: StakeOrder): Promise<void> {
     if (swapStatus.status === 'settled' && order.stakeStatus === 'pending') {
       await initiateStaking(order, swapStatus);
     }
-
   } catch (error) {
-    logger.error(`[StakeWorker] Error processing stake order ${order.id}:`, error);
-    
-    // Update order with error status
-    await db.updateStakeOrderStakeStatus(
-      order.sideshiftOrderId,
-      'failed'
+    logger.error(
+      `[StakeWorker] Error processing stake order ${order.id}:`,
+      error,
     );
+
+    // Update order with error status
+    await db.updateStakeOrderStakeStatus(order.sideshiftOrderId, 'failed');
 
     // Notify user of failure
     if (bot) {
       await bot.telegram.sendMessage(
         order.telegramId,
         `❌ *Stake Order Failed*\n\n` +
-        `Order ID: \`${order.sideshiftOrderId}\`\n` +
-        `Error: ${error instanceof Error ? error.message : 'Unknown error'}\n\n` +
-        `Your swapped tokens have been sent to your wallet.`,
-        { parse_mode: 'Markdown' }
+          `Order ID: \`${order.sideshiftOrderId}\`\n` +
+          `Error: ${
+            error instanceof Error ? error.message : 'Unknown error'
+          }\n\n` +
+          `Your swapped tokens have been sent to your wallet.`,
+        { parse_mode: 'Markdown' },
       );
     }
   }
@@ -109,49 +117,39 @@ async function initiateStaking(order: StakeOrder, swapStatus: any): Promise<void
   logger.info(`[StakeWorker] Initiating staking for order ${order.id}`);
 
   // Update status to submitted
-  await db.updateStakeOrderStakeStatus(
-    order.sideshiftOrderId,
-    'submitted'
-  );
+  await db.updateStakeOrderStakeStatus(order.sideshiftOrderId, 'submitted');
 
-  // In a real implementation, this would:
-  // 1. Generate the staking transaction calldata
-  // 2. Either:
-  //    a) Send the transaction if we have custody (not recommended)
-  //    b) Generate a transaction for the user to sign
-  //    c) Use a smart contract to auto-stake on receipt
-  
   // For now, we'll provide instructions to the user
   if (bot) {
     const settleAmount = swapStatus.settleAmount || order.settleAmount || '0';
-    
+
     await bot.telegram.sendMessage(
       order.telegramId,
       `✅ *Swap Complete - Ready to Stake!*\n\n` +
-      `*Order ID:* \`${order.sideshiftOrderId}\`\n\n` +
-      `*Received:* ${settleAmount} ${order.stakeAsset}\n` +
-      `*Protocol:* ${order.stakeProtocol}\n` +
-      `*Network:* ${order.stakeNetwork}\n\n` +
-      `📋 *Next Steps:*\n` +
-      `1. Your ${order.stakeAsset} has been sent to your wallet\n` +
-      `2. Visit the ${order.stakeProtocol} platform to stake your tokens\n` +
-      `3. Deposit address: \`${order.depositAddress}\`\n\n` +
-      `💡 *Tip:* You can also stake directly through the protocol's website for the best rates!`,
-      { parse_mode: 'Markdown' }
+        `*Order ID:* \`${order.sideshiftOrderId}\`\n\n` +
+        `*Received:* ${settleAmount} ${order.stakeAsset}\n` +
+        `*Protocol:* ${order.stakeProtocol}\n` +
+        `*Network:* ${order.stakeNetwork}\n\n` +
+        `📋 *Next Steps:*\n` +
+        `1. Your ${order.stakeAsset} has been sent to your wallet\n` +
+        `2. Visit the ${order.stakeProtocol} platform to stake your tokens\n` +
+        `3. Deposit address: \`${order.depositAddress}\`\n\n` +
+        `💡 *Tip:* You can also stake directly through the protocol's website for the best rates!`,
+      { parse_mode: 'Markdown' },
     );
 
     // Mark as confirmed (user needs to manually stake)
-    await db.updateStakeOrderStakeStatus(
-      order.sideshiftOrderId,
-      'confirmed'
-    );
+    await db.updateStakeOrderStakeStatus(order.sideshiftOrderId, 'confirmed');
   }
 }
 
 /**
  * Notify user of swap status change
  */
-async function notifySwapStatusChange(order: StakeOrder, newStatus: string): Promise<void> {
+async function notifySwapStatusChange(
+  order: StakeOrder,
+  newStatus: string,
+): Promise<void> {
   if (!bot) return;
 
   const emojiMap: Record<string, string> = {
@@ -170,14 +168,14 @@ async function notifySwapStatusChange(order: StakeOrder, newStatus: string): Pro
   await bot.telegram.sendMessage(
     order.telegramId,
     `${emoji} *Swap & Stake Update*\n\n` +
-    `*Order:* \`${order.sideshiftOrderId}\`\n` +
-    `*Swap Status:* ${newStatus.toUpperCase()}\n` +
-    `*From:* ${order.fromAmount} ${order.fromAsset}\n` +
-    `*To:* ${order.stakeAsset} (${order.stakeProtocol})\n\n` +
-    (newStatus === 'settled' 
-      ? `Next: Preparing to stake your tokens... 📈` 
-      : `Waiting for swap to complete...`),
-    { parse_mode: 'Markdown' }
+      `*Order:* \`${order.sideshiftOrderId}\`\n` +
+      `*Swap Status:* ${newStatus.toUpperCase()}\n` +
+      `*From:* ${order.fromAmount} ${order.fromAsset}\n` +
+      `*To:* ${order.stakeAsset} (${order.stakeProtocol})\n\n` +
+      (newStatus === 'settled'
+        ? `Next: Preparing to stake your tokens... 📈`
+        : `Waiting for swap to complete...`),
+    { parse_mode: 'Markdown' },
   );
 }
 
@@ -186,17 +184,10 @@ async function notifySwapStatusChange(order: StakeOrder, newStatus: string): Pro
  */
 export function stopStakeWorker(): void {
   logger.info('[StakeWorker] Stopping stake order worker');
-<<<<<<< HEAD
-  if (stakeTask) {
-    stakeTask.stop();
-    stakeTask = null;
-  }
-=======
-  if (scheduledTask) {
-    scheduledTask.stop();
-    scheduledTask = null;
   if (scheduledTask) {
     scheduledTask.stop();
     scheduledTask = null;
   }
   bot = null;
+}
+
