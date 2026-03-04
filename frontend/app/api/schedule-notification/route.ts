@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { scheduleNotification, stopScheduledNotification } from '@/lib/notification-scheduler';
 import { adminAuth } from '@/lib/firebase-admin';
+import { withRateLimit, rateLimitConfigs } from '@/lib/rate-limiter';
+import { withCSRFProtection } from '@/lib/enhanced-csrf';
 
-export async function POST(req: NextRequest) {
+export const POST = withRateLimit(withCSRFProtection(async (req: NextRequest) => {
   try {
     // Verify Authorization Header
     const authHeader = req.headers.get('Authorization');
@@ -72,4 +74,4 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     );
   }
-}
+}), rateLimitConfigs.write);

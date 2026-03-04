@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSwapHistory, getSwapHistoryByWallet, createSwapHistoryEntry } from '@/lib/database';
+import { withRateLimit, rateLimitConfigs } from '@/lib/rate-limiter';
+import { withCSRFProtection } from '@/lib/enhanced-csrf';
 
 // GET /api/history - Get swap history for authenticated user or wallet
 export async function GET(request: NextRequest) {
@@ -42,7 +44,7 @@ export async function GET(request: NextRequest) {
 }
 
 // POST /api/history - Create new swap history entry
-export async function POST(request: NextRequest) {
+export const POST = withRateLimit(withCSRFProtection(async (request: NextRequest) => {
   try {
     const body = await request.json();
     const {
@@ -96,4 +98,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+}), rateLimitConfigs.write);

@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
 import { verifyAdminToken } from '@/lib/adminAuth';
 import { giftAllUsers } from '@/lib/admin-service';
+import { withRateLimit, rateLimitConfigs } from '@/lib/rate-limiter';
+import { withCSRFProtection } from '@/lib/enhanced-csrf';
 
-export async function POST(req: Request) {
+export const POST = withRateLimit(withCSRFProtection(async (req: Request) => {
   try {
     const authHeader = req.headers.get('authorization') ?? '';
     const admin = await verifyAdminToken(authHeader);
@@ -28,4 +30,4 @@ export async function POST(req: Request) {
     console.error('[admin/coins/gift-all] error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-}
+}), rateLimitConfigs.sensitive);

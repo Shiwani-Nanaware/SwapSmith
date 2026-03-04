@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { claimPendingTokens } from '@/lib/database';
+import { withRateLimit, rateLimitConfigs } from '@/lib/rate-limiter';
+import { withCSRFProtection } from '@/lib/enhanced-csrf';
 
-export async function POST(request: NextRequest) {
+export const POST = withRateLimit(withCSRFProtection(async (request: NextRequest) => {
   try {
     const userId = request.headers.get('x-user-id');
 
@@ -53,5 +55,5 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+}), rateLimitConfigs.write);
 

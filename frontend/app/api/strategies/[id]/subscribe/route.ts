@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { subscribeToStrategy, unsubscribeFromStrategy, pauseSubscription, resumeSubscription } from '../../../../../../shared/services/strategy-marketplace';
+import { withRateLimit, rateLimitConfigs } from '@/lib/rate-limiter';
+import { withCSRFProtection } from '@/lib/enhanced-csrf';
 
-export async function POST(
+export const POST = withRateLimit(withCSRFProtection(async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   try {
     const { id } = await params;
     const strategyId = Number(id);
@@ -49,12 +51,12 @@ export async function POST(
       { status: 500 }
     );
   }
-}
+}), rateLimitConfigs.write);
 
-export async function DELETE(
+export const DELETE = withRateLimit(withCSRFProtection(async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   try {
     const { id } = await params;
     const strategyId = Number(id);
@@ -93,12 +95,12 @@ export async function DELETE(
       { status: 500 }
     );
   }
-}
+}), rateLimitConfigs.write);
 
-export async function PATCH(
+export const PATCH = withRateLimit(withCSRFProtection(async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   try {
     const { id } = await params;
     const strategyId = Number(id);
@@ -148,4 +150,4 @@ export async function PATCH(
       { status: 500 }
     );
   }
-}
+}), rateLimitConfigs.write);

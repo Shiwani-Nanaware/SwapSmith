@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { purchasePlan } from '@/lib/plan-service';
 import { getUserIdFromFirebaseUid } from '@/lib/user-service';
+import { withRateLimit, rateLimitConfigs } from '@/lib/rate-limiter';
+import { withCSRFProtection } from '@/lib/enhanced-csrf';
 
 /**
  * POST /api/plan/purchase
  * Body: { plan: 'premium' | 'pro' }
  * Deducts SwapSmith coins and activates the plan for 30 days.
  */
-export async function POST(request: NextRequest) {
+export const POST = withRateLimit(withCSRFProtection(async (request: NextRequest) => {
   try {
     const firebaseUid = request.headers.get('x-firebase-uid');
     const userIdHeader = request.headers.get('x-user-id');
@@ -50,4 +52,4 @@ export async function POST(request: NextRequest) {
     console.error('Error purchasing plan:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-}
+}), rateLimitConfigs.write);

@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { triggerManualRefresh } from '@/lib/price-refresh-cron';
+import { withRateLimit, rateLimitConfigs } from '@/lib/rate-limiter';
+import { withCSRFProtection } from '@/lib/enhanced-csrf';
 
 /**
  * POST /api/prices/refresh - Manually trigger a price refresh
@@ -7,7 +9,7 @@ import { triggerManualRefresh } from '@/lib/price-refresh-cron';
  * This endpoint allows manual triggering of the price refresh process.
  * Useful for testing or force-refreshing the cache.
  */
-export async function POST() {
+export const POST = withRateLimit(withCSRFProtection(async () => {
   try {
     console.log('[Prices Refresh API] Manual refresh triggered');
     
@@ -31,4 +33,4 @@ export async function POST() {
       { status: 500 }
     );
   }
-}
+}), rateLimitConfigs.write);

@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { addRewardActivity, getUserRewardActivities } from '@/lib/database';
+import { withRateLimit, rateLimitConfigs } from '@/lib/rate-limiter';
+import { withCSRFProtection } from '@/lib/enhanced-csrf';
 
 const NOTIFICATION_ENABLE_POINTS = 15;
 const NOTIFICATION_ENABLE_TOKENS = '0.15';
 
-export async function POST(request: NextRequest) {
+export const POST = withRateLimit(withCSRFProtection(async (request: NextRequest) => {
   try {
     const userId = request.headers.get('x-user-id');
     
@@ -57,4 +59,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+}), rateLimitConfigs.write);

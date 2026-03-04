@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { adminAuth } from '@/lib/firebase-admin';
 import { getAdminByFirebaseUid } from '@/lib/admin-service';
+import { withRateLimit, rateLimitConfigs } from '@/lib/rate-limiter';
+import { withCSRFProtection } from '@/lib/enhanced-csrf';
 
 /**
  * POST /api/admin/verify
  * Verifies a Firebase ID token and returns admin info.
  * Used by the frontend to check admin status on page load.
  */
-export async function POST(req: NextRequest) {
+export const POST = withRateLimit(withCSRFProtection(async (req: NextRequest) => {
   try {
     const { idToken } = await req.json();
     if (!idToken) return NextResponse.json({ error: 'Missing token.' }, { status: 400 });
@@ -35,4 +37,4 @@ export async function POST(req: NextRequest) {
     console.error('[Admin Verify API]', err);
     return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
   }
-}
+}), rateLimitConfigs.auth);

@@ -8,6 +8,8 @@ import {
   deletePortfolioTarget,
   getRebalanceHistory 
 } from '@/lib/database';
+import { withRateLimit, rateLimitConfigs } from '@/lib/rate-limiter';
+import { withCSRFProtection } from '@/lib/enhanced-csrf';
 
 function validateAssets(assets: any[]): { valid: boolean; error?: string } {
   if (!Array.isArray(assets) || assets.length === 0) {
@@ -94,7 +96,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export const POST = withRateLimit(withCSRFProtection(async (request: NextRequest) => {
   try {
     const userId = await getAuthenticatedUserId(request);
     
@@ -146,9 +148,9 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+}), rateLimitConfigs.write);
 
-export async function PUT(request: NextRequest) {
+export const PUT = withRateLimit(withCSRFProtection(async (request: NextRequest) => {
   try {
     const userId = await getAuthenticatedUserId(request);
     
@@ -201,9 +203,9 @@ export async function PUT(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+}), rateLimitConfigs.write);
 
-export async function DELETE(request: NextRequest) {
+export const DELETE = withRateLimit(withCSRFProtection(async (request: NextRequest) => {
   try {
     const userId = await getAuthenticatedUserId(request);
     
@@ -241,4 +243,4 @@ export async function DELETE(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+}), rateLimitConfigs.write);

@@ -4,8 +4,10 @@ import {
   sendPriceAlertEmail,
   sendGeneralNotification,
 } from '@/lib/email';
+import { withRateLimit, rateLimitConfigs } from '@/lib/rate-limiter';
+import { withCSRFProtection } from '@/lib/enhanced-csrf';
 
-export async function POST(req: NextRequest) {
+export const POST = withRateLimit(withCSRFProtection(async (req: NextRequest) => {
   try {
     const body = await req.json();
     const { type, userEmail, userName, ...data } = body;
@@ -79,4 +81,4 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     );
   }
-}
+}), rateLimitConfigs.write);

@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { transcribeAudio } from '@/utils/groq-client';
+import { withRateLimit, rateLimitConfigs } from '@/lib/rate-limiter';
+import { withCSRFProtection } from '@/lib/enhanced-csrf';
 
 export const runtime = 'nodejs';
-export async function POST(req: NextRequest) {
+export const POST = withRateLimit(withCSRFProtection(async (req: NextRequest) => {
   try {
     const formData = await req.formData();
     const file = formData.get('file') as File;
@@ -23,4 +25,4 @@ export async function POST(req: NextRequest) {
     const errorObj = error as Error;
     return NextResponse.json({ error: errorObj.message || 'Transcription failed' }, { status: 500 });
   }
-}
+}), rateLimitConfigs.write);

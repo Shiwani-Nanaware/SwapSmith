@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getStrategies, createStrategy } from '../../../../shared/services/strategy-marketplace';
+import { withRateLimit, rateLimitConfigs } from '@/lib/rate-limiter';
+import { withCSRFProtection } from '@/lib/enhanced-csrf';
 
 export async function GET(request: NextRequest) {
   try {
@@ -28,7 +30,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export const POST = withRateLimit(withCSRFProtection(async (request: NextRequest) => {
   try {
     const body = await request.json();
     const { 
@@ -74,4 +76,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+}), rateLimitConfigs.write);

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDiscussions, createDiscussion, deleteDiscussion, likeDiscussion } from '@/lib/database';
 import { adminAuth } from '@/lib/firebase-admin';
+import { withRateLimit, rateLimitConfigs } from '@/lib/rate-limiter';
+import { withCSRFProtection } from '@/lib/enhanced-csrf';
 
 // GET /api/discussions - Get all discussions or filtered by category
 export async function GET(request: NextRequest) {
@@ -38,7 +40,7 @@ export async function GET(request: NextRequest) {
 }
 
 // POST /api/discussions - Create a new discussion
-export async function POST(request: NextRequest) {
+export const POST = withRateLimit(withCSRFProtection(async (request: NextRequest) => {
   try {
     if (!process.env.DATABASE_URL) {
       console.error('DATABASE_URL is not configured');
@@ -84,10 +86,10 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+}), rateLimitConfigs.write);
 
 // DELETE /api/discussions - Delete a discussion
-export async function DELETE(request: NextRequest) {
+export const DELETE = withRateLimit(withCSRFProtection(async (request: NextRequest) => {
   try {
     // 🔐 Firebase authentication
     const authHeader = request.headers.get('authorization');
@@ -144,10 +146,10 @@ export async function DELETE(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+}), rateLimitConfigs.write);
 
 // PATCH /api/discussions - Like a discussion
-export async function PATCH(request: NextRequest) {
+export const PATCH = withRateLimit(withCSRFProtection(async (request: NextRequest) => {
   try {
     if (!process.env.DATABASE_URL) {
       console.error('DATABASE_URL is not configured');
@@ -181,4 +183,4 @@ export async function PATCH(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+}), rateLimitConfigs.write);

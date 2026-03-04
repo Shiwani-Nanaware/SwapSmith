@@ -7,10 +7,12 @@ import {
   getRequestByEmail,
 } from '@/lib/admin-service';
 import { sendAdminApprovalRequestEmail } from '@/lib/admin-email';
+import { withRateLimit, rateLimitConfigs } from '@/lib/rate-limiter';
+import { withCSRFProtection } from '@/lib/enhanced-csrf';
 
 const MASTER_ADMIN_EMAIL = process.env.ADMIN_MASTER_EMAIL || '';
 
-export async function POST(req: NextRequest) {
+export const POST = withRateLimit(withCSRFProtection(async (req: NextRequest) => {
   try {
     const { name, email, idToken } = await req.json();
 
@@ -83,4 +85,4 @@ export async function POST(req: NextRequest) {
     console.error('[Admin Request API]', err);
     return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
   }
-}
+}), rateLimitConfigs.auth);

@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ensureUserExists } from '@/lib/user-service';
+import { withRateLimit, rateLimitConfigs } from '@/lib/rate-limiter';
+import { withCSRFProtection } from '@/lib/enhanced-csrf';
 
 /**
  * POST /api/user/ensure
  * Ensures a user exists in the database and returns their ID
  */
-export async function POST(request: NextRequest) {
+export const POST = withRateLimit(withCSRFProtection(async (request: NextRequest) => {
   try {
     const { firebaseUid, walletAddress } = await request.json();
 
@@ -29,4 +31,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+}), rateLimitConfigs.write);

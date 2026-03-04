@@ -6,6 +6,8 @@ import {
   getUserCoinLogs,
 } from '@/lib/admin-service';
 import { neon } from '@neondatabase/serverless';
+import { withRateLimit, rateLimitConfigs } from '@/lib/rate-limiter';
+import { withCSRFProtection } from '@/lib/enhanced-csrf';
 
 const rawSql = neon(process.env.DATABASE_URL!);
 
@@ -31,7 +33,7 @@ async function decodeToken(token: string): Promise<{ uid: string } | null> {
  *
  * Adjusts testnet coin balance for a user and writes an audit log entry.
  */
-export async function POST(req: NextRequest) {
+export const POST = withRateLimit(withCSRFProtection(async (req: NextRequest) => {
   try {
     const authHeader = req.headers.get('authorization');
     if (!authHeader?.startsWith('Bearer ')) {
@@ -90,7 +92,7 @@ export async function POST(req: NextRequest) {
     console.error('[Admin Coins Adjust API]', err);
     return NextResponse.json({ error: 'Internal server error.' }, { status: 500 });
   }
-}
+}), rateLimitConfigs.sensitive);
 
 /**
  * GET /api/admin/coins/adjust?userId=<numeric>

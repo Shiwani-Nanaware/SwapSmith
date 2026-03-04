@@ -7,8 +7,9 @@ import {
   getCachedPrice,
 } from '@/lib/database';
 import logger from '@/lib/logger';
+import { withCSRF } from '@/lib/csrf';
 
-export default async function handler(
+async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
@@ -148,3 +149,5 @@ export default async function handler(
   // 🚫 Method not allowed
   return res.status(405).json({ error: 'Method not allowed' });
 }
+
+export default withCSRF(handler);

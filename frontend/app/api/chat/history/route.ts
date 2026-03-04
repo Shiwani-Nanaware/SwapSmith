@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getChatHistory, addChatMessage, clearChatHistory } from '@/lib/database';
 import { adminAuth } from '@/lib/firebase-admin';
+import { withRateLimit, rateLimitConfigs } from '@/lib/rate-limiter';
+import { withCSRFProtection } from '@/lib/enhanced-csrf';
 
 // GET /api/chat/history - Get chat history for user
 export async function GET(request: NextRequest) {
@@ -67,7 +69,7 @@ export async function GET(request: NextRequest) {
 }
 
 // POST /api/chat/history - Add chat message
-export async function POST(request: NextRequest) {
+export const POST = withRateLimit(withCSRFProtection(async (request: NextRequest) => {
   try {
     // 🔐 Firebase authentication
     const authHeader = request.headers.get('authorization');
@@ -138,10 +140,10 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+}), rateLimitConfigs.write);
 
 // DELETE /api/chat/history - Clear chat history
-export async function DELETE(request: NextRequest) {
+export const DELETE = withRateLimit(withCSRFProtection(async (request: NextRequest) => {
   try {
     // 🔐 Firebase authentication
     const authHeader = request.headers.get('authorization');
@@ -192,4 +194,4 @@ export async function DELETE(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+}), rateLimitConfigs.write);

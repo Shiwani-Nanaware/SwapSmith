@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { incrementTerminalUsage, getUserPlanStatus } from '@/lib/plan-service';
 import { getUserIdFromFirebaseUid } from '@/lib/user-service';
+import { withRateLimit, rateLimitConfigs } from '@/lib/rate-limiter';
+import { withCSRFProtection } from '@/lib/enhanced-csrf';
 
 async function resolveUserId(request: NextRequest): Promise<number | null> {
   const userIdHeader = request.headers.get('x-user-id');
@@ -15,7 +17,7 @@ async function resolveUserId(request: NextRequest): Promise<number | null> {
  * Checks and increments terminal usage for the authenticated user.
  * Returns 429 with upgradeRequired: true if limit exceeded.
  */
-export async function POST(request: NextRequest) {
+export const POST = withRateLimit(withCSRFProtection(async (request: NextRequest) => {
   const userId = await resolveUserId(request);
   if (!userId) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -40,7 +42,7 @@ export async function POST(request: NextRequest) {
     console.error('Error incrementing terminal usage:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-}
+}), rateLimitConfigs.write);
 
 /**
  * GET /api/plan/usage/terminal
