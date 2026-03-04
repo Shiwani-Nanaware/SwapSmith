@@ -465,6 +465,74 @@ export const gasOptimizationHistory = pgTable('gas_optimization_history', {
   index("idx_gas_optimization_history_swap_id").on(table.swapId),
 ]);
 
+// --- STRATEGY MARKETPLACE SCHEMAS ---
+
+export const tradingStrategies = pgTable('trading_strategies', {
+  id: serial('id').primaryKey(),
+  creatorId: integer('creator_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  creatorTelegramId: bigint('creator_telegram_id', { mode: 'number' }),
+  name: text('name').notNull(),
+  description: text('description').notNull(),
+  parameters: jsonb('parameters').notNull(),
+  riskLevel: text('risk_level').notNull(), // 'low' | 'medium' | 'high' | 'aggressive'
+  subscriptionFee: text('subscription_fee').notNull(),
+  performanceFee: real('performance_fee').notNull(),
+  minInvestment: text('min_investment').notNull(),
+  isPublic: boolean('is_public').notNull().default(true),
+  tags: text('tags').array(),
+  status: text('status').notNull().default('active'),
+  totalReturn: real('total_return').notNull().default(0),
+  monthlyReturn: real('monthly_return').notNull().default(0),
+  maxDrawdown: real('max_drawdown').notNull().default(0),
+  subscriberCount: integer('subscriber_count').notNull().default(0),
+  totalTrades: integer('total_trades').notNull().default(0),
+  successfulTrades: integer('successful_trades').notNull().default(0),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at'),
+});
+
+export const strategySubscriptions = pgTable('strategy_subscriptions', {
+  id: serial('id').primaryKey(),
+  strategyId: integer('strategy_id').notNull().references(() => tradingStrategies.id, { onDelete: 'cascade' }),
+  subscriberId: integer('subscriber_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  subscriberTelegramId: bigint('subscriber_telegram_id', { mode: 'number' }),
+  subscriptionFee: text('subscription_fee').notNull(),
+  allocationPercent: real('allocation_percent').notNull().default(100),
+  autoRebalance: boolean('auto_rebalance').notNull().default(true),
+  stopLossPercent: real('stop_loss_percent'),
+  status: text('status').notNull().default('active'), // 'active' | 'paused' | 'cancelled'
+  joinedAt: timestamp('joined_at').defaultNow(),
+  pausedAt: timestamp('paused_at'),
+  cancelledAt: timestamp('cancelled_at'),
+}, (table) => [
+  index('idx_strategy_subscriptions_strategy_id').on(table.strategyId),
+  index('idx_strategy_subscriptions_subscriber_id').on(table.subscriberId),
+]);
+
+export const strategyPerformance = pgTable('strategy_performance', {
+  id: serial('id').primaryKey(),
+  strategyId: integer('strategy_id').notNull().references(() => tradingStrategies.id, { onDelete: 'cascade' }),
+  pnlPercent: real('pnl_percent').notNull(),
+  status: text('status').notNull().default('completed'), // 'completed' | 'failed'
+  executedAt: timestamp('executed_at').defaultNow(),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (table) => [
+  index('idx_strategy_performance_strategy_id').on(table.strategyId),
+]);
+
+export const strategyTrades = pgTable('strategy_trades', {
+  id: serial('id').primaryKey(),
+  strategyId: integer('strategy_id').notNull().references(() => tradingStrategies.id, { onDelete: 'cascade' }),
+  status: text('status').notNull().default('pending'), // 'pending' | 'completed' | 'failed'
+  settleAmount: text('settle_amount'),
+  sideshiftOrderId: text('sideshift_order_id'),
+  error: text('error'),
+  executedAt: timestamp('executed_at'),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (table) => [
+  index('idx_strategy_trades_strategy_id').on(table.strategyId),
+]);
+
 
 // --- RELATIONS ---
 

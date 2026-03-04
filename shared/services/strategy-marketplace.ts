@@ -205,7 +205,6 @@ export async function subscribeToStrategy(
       allocationPercent: input.allocationPercent || 100,
       autoRebalance: input.autoRebalance ?? true,
       stopLossPercent: input.stopLossPercent,
-      pausedAt: null,
       cancelledAt: null,
     }
   }).returning();
