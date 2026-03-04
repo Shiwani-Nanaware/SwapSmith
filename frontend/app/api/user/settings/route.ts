@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserSettings, createOrUpdateUserSettings } from '@/lib/database';
 import { adminAuth } from '@/lib/firebase-admin';
+import { withCSRFProtection } from '@/lib/enhanced-csrf';
+import { withRateLimit, rateLimitConfigs } from '@/lib/rate-limiter';
 
 // GET /api/user/settings - Get user settings
-export async function GET(request: NextRequest) {
+export const GET = withRateLimit(async (request: NextRequest) => {
   try {
     // 🔐 Firebase authentication
     const authHeader = request.headers.get('authorization');
@@ -81,10 +83,10 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+}, rateLimitConfigs.api);
 
 // POST /api/user/settings - Create or update user settings
-export async function POST(request: NextRequest) {
+export const POST = withRateLimit(withCSRFProtection(async (request: NextRequest) => {
   try {
     // 🔐 Firebase authentication
     const authHeader = request.headers.get('authorization');
@@ -153,9 +155,7 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+}), rateLimitConfigs.write);
 
 // PATCH /api/user/settings - Partial update user settings (deprecated, use POST)
-export async function PATCH(request: NextRequest) {
-  return POST(request);
-}
+export const PATCH = POST;

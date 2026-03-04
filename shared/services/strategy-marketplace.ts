@@ -477,7 +477,7 @@ export async function updateStrategyMetrics(strategyId: number): Promise<void> {
   }
 
   // Calculate metrics
-  const totalPnL = performance.reduce((acc: number, p) => acc + Number(p.pnl), 0);
+  const totalPnL = performance.reduce((acc: number, p) => acc + Number(p.pnlPercent), 0);
   const pnlPercents = performance.map(p => p.pnlPercent);
   
   const avgReturn = pnlPercents.reduce((acc: number, p: number) => acc + p, 0) / pnlPercents.length;
@@ -504,9 +504,7 @@ export async function updateStrategyMetrics(strategyId: number): Promise<void> {
     .set({
       totalReturn: totalPnL,
       monthlyReturn: avgReturn,
-      sharpeRatio,
       maxDrawdown,
-      volatility,
       updatedAt: new Date(),
     })
     .where(eq(tradingStrategies.id, strategyId));

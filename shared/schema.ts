@@ -623,6 +623,16 @@ export const adminRequests = pgTable('admin_requests', {
 export type AdminUser = typeof adminUsers.$inferSelect;
 export type AdminRequest = typeof adminRequests.$inferSelect;
 
+// Strategy marketplace types
+export type TradingStrategy = typeof tradingStrategies.$inferSelect;
+export type NewTradingStrategy = typeof tradingStrategies.$inferInsert;
+export type StrategySubscription = typeof strategySubscriptions.$inferSelect;
+export type NewStrategySubscription = typeof strategySubscriptions.$inferInsert;
+export type StrategyPerformance = typeof strategyPerformance.$inferSelect;
+export type NewStrategyPerformance = typeof strategyPerformance.$inferInsert;
+export type StrategyTrade = typeof strategyTrades.$inferSelect;
+export type NewStrategyTrade = typeof strategyTrades.$inferInsert;
+
 // --- TESTNET COIN GIFT LOGS ---
 
 export const coinGiftActionType = pgEnum('coin_gift_action_type', ['gift', 'deduct', 'reset']);

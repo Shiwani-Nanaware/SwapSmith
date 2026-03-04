@@ -1,32 +1,58 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { withSecurityHeaders } from '@/lib/security-headers';
+import { rateLimit, rateLimitConfigs } from '@/lib/rate-limiter';
 
 /**
- * Middleware – protects /admin/dashboard by verifying an admin session.
- * The verify check is done client-side (sessionStorage token) but we add
- * a lightweight layer here that blocks direct navigation without any token
- * by checking the cookie set after login.
- *
- * Full server-side token verification happens in /api/admin/analytics.
+ * Enhanced middleware with security features:
+ * - Admin route protection
+ * - Rate limiting for API routes
+ * - Security headers
+ * - CSRF protection
  */
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  let response = NextResponse.next();
 
-  // Only guard the dashboard route
+  // Rate limiting for API routes
+  if (pathname.startsWith('/api/')) {
+    let rateLimitConfig;
+    
+    // Apply different rate limits based on endpoint sensitivity
+    if (pathname.includes('/auth') || pathname.includes('/login') || pathname.includes('/register')) {
+      rateLimitConfig = rateLimitConfigs.auth;
+    } else if (pathname.includes('/admin/')) {
+      rateLimitConfig = rateLimitConfigs.sensitive;
+    } else if (request.method !== 'GET') {
+      rateLimitConfig = rateLimitConfigs.write;
+    } else {
+      rateLimitConfig = rateLimitConfigs.api;
+    }
+    
+    const rateLimitResponse = await rateLimit(rateLimitConfig)(request);
+    if (rateLimitResponse) {
+      return withSecurityHeaders(rateLimitResponse);
+    }
+  }
+
+  // Admin dashboard protection
   if (pathname.startsWith('/admin/dashboard')) {
-    // We cannot read sessionStorage in middleware (runs on the edge).
-    // Instead we rely on a short-lived cookie set by the login page.
     const adminSession = request.cookies.get('admin-session');
 
     if (!adminSession?.value) {
       const loginUrl = new URL('/admin/login', request.url);
       loginUrl.searchParams.set('from', pathname);
-      return NextResponse.redirect(loginUrl);
+      response = NextResponse.redirect(loginUrl);
     }
   }
 
-  return NextResponse.next();
+  // Apply security headers to all responses
+  return withSecurityHeaders(response);
 }
 
 export const config = {
-  matcher: ['/admin/dashboard/:path*'],
+  matcher: [
+    '/admin/dashboard/:path*',
+    '/api/:path*',
+    '/((?!_next/static|_next/image|favicon.ico).*)'
+  ],
 };

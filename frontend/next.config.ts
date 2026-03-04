@@ -14,6 +14,37 @@ const nextConfig: NextConfig = {
   // Only set custom tracing root when NOT on Vercel
   ...(isVercel ? {} : { outputFileTracingRoot: path.join(process.cwd(), '../') }),
 
+  // Security headers
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'X-Frame-Options',
+            value: 'DENY'
+          },
+          {
+            key: 'X-Content-Type-Options',
+            value: 'nosniff'
+          },
+          {
+            key: 'X-XSS-Protection',
+            value: '1; mode=block'
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'strict-origin-when-cross-origin'
+          },
+          {
+            key: 'Permissions-Policy',
+            value: 'camera=(), microphone=(), geolocation=(), payment=(self)'
+          }
+        ]
+      }
+    ];
+  },
+
   // Leave empty to use defaults, or configure if needed
   turbopack: {}
 };
