@@ -22,7 +22,7 @@ export const mintStatusType = pgEnum('mint_status_type', [
   'failed'
 ]);
 
-// --- BOT SCHEMAS ---
+// --- BOT SCHEMAS --- (Updated for financial precision)
 
 export const users = pgTable('users', {
   id: serial('id').primaryKey(),
